@@ -16,7 +16,7 @@ import java.util.List;
 @RequestMapping("/api/personnes")
 @RequiredArgsConstructor
 public class LogErreurController {
-
+//cont
     private final LogErreurService logErreurService;
     @GetMapping("/logs")
     @PreAuthorize("hasRole('client_admin')")
