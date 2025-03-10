@@ -17,6 +17,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class LogErreurController {
 //cont
+    //sd
     private final LogErreurService logErreurService;
     @GetMapping("/logs")
     @PreAuthorize("hasRole('client_admin')")
