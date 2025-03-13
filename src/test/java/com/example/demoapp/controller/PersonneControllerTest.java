@@ -1,7 +1,7 @@
 package com.example.demoapp.controller;
 
 import com.example.demoapp.entities.Personne;
-import com.example.demoapp.services.PersonneService;
+import com.example.demoapp.services.PersonneServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,7 +20,7 @@ import static org.mockito.Mockito.*;
 class PersonneControllerTest {
 
     @Mock
-    private PersonneService personneService;
+    private PersonneServiceImpl personneService;
 
     @InjectMocks
     private PersonneController personneController;

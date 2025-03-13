@@ -2,7 +2,7 @@ package com.example.demoapp.service;
 
 import com.example.demoapp.entities.Personne;
 import com.example.demoapp.repositories.PersonneRepository;
-import com.example.demoapp.services.PersonneService;
+import com.example.demoapp.services.PersonneServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,7 +22,7 @@ class PersonneServiceTest {
     private PersonneRepository personneRepository;
 
     @InjectMocks
-    private PersonneService personneService;
+    private PersonneServiceImpl personneService;
 
     private Personne personne;
 

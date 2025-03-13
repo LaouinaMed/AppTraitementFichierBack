@@ -1,7 +1,7 @@
 package com.example.demoapp.controller;
 
 import com.example.demoapp.entities.LogErreur;
-import com.example.demoapp.services.LogErreurService;
+import com.example.demoapp.services.LogErreurServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,7 +20,7 @@ import static org.mockito.Mockito.*;
 class LogErreurControllerTest {
 
     @Mock
-    private LogErreurService logErreurService;
+    private LogErreurServiceImpl logErreurService;
 
     @InjectMocks
     private LogErreurController logErreurController;

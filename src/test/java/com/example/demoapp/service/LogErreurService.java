@@ -2,7 +2,7 @@ package com.example.demoapp.service;
 
 import com.example.demoapp.entities.LogErreur;
 import com.example.demoapp.repositories.LogErreurRepository;
-import com.example.demoapp.services.LogErreurService;
+import com.example.demoapp.services.LogErreurServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,7 +23,7 @@ class LogErreurServiceTest {
     private LogErreurRepository logErreurRepository;
 
     @InjectMocks
-    private LogErreurService logErreurService;
+    private LogErreurServiceImpl logErreurService;
 
     private LogErreur log1, log2;
 

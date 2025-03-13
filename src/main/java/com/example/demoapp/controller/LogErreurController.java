@@ -1,7 +1,7 @@
 package com.example.demoapp.controller;
 
 import com.example.demoapp.entities.LogErreur;
-import com.example.demoapp.services.LogErreurService;
+import com.example.demoapp.services.LogErreurServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +18,7 @@ import java.util.List;
 public class LogErreurController {
 //cont
     //sd
-    private final LogErreurService logErreurService;
+    private final LogErreurServiceImpl logErreurService;
     @GetMapping("/logs")
     @PreAuthorize("hasRole('client_admin')")
 
