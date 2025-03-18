@@ -3,6 +3,7 @@ package com.example.demoapp.controller;
 import com.example.demoapp.entities.Personne;
 import com.example.demoapp.Iservices.PersonneService;
 import jakarta.annotation.Nullable;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.HttpStatus;
@@ -33,13 +34,13 @@ public class PersonneController {
 
     @PostMapping
     @PreAuthorize("hasRole('client_admin')")
-    public ResponseEntity<Personne> addPersonne(@RequestBody Personne personne) {
+    public ResponseEntity<Personne> addPersonne(@Valid @RequestBody Personne personne) {
         return ResponseEntity.status(HttpStatus.CREATED).body(personneService.addPersonne(personne));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('client_admin')")
-    public ResponseEntity<Personne> updatePersonne(@PathVariable Long id, @Nullable @RequestBody Personne personne) {
+    public ResponseEntity<Personne> updatePersonne(@Valid @PathVariable Long id, @Nullable @RequestBody Personne personne) {
         return ResponseEntity.ok(personneService.updatePersonne(id, personne));
     }
 
@@ -51,7 +52,8 @@ public class PersonneController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('client_admin')")
+    @PreAuthorize("hasRole('client_admin') or hasRole('client_user')")
+
     public ResponseEntity<List<Personne>> getAllPersonnes() {
         return ResponseEntity.ok((List<Personne>) personneService.getAllPersonnes());
     }
