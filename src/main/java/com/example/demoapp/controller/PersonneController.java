@@ -2,6 +2,7 @@ package com.example.demoapp.controller;
 
 import com.example.demoapp.entities.Personne;
 import com.example.demoapp.Iservices.PersonneService;
+import com.example.demoapp.services.KeycloakServiceImpl;
 import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -19,9 +20,13 @@ import java.util.logging.Logger;
 @RestController
 @RequestMapping("/api/personnes")
 @RequiredArgsConstructor
+
 public class PersonneController {
 
     private final PersonneService personneService;
+
+    private final KeycloakServiceImpl keycloakService;
+
     private static final Logger log = Logger.getLogger(PersonneController.class.getName());
 
     @PostMapping("/upload")
@@ -65,4 +70,14 @@ public class PersonneController {
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
+
+    @GetMapping("/roles/{id}")
+    @PreAuthorize("hasRole('client_admin')")  // Autoriser uniquement les utilisateurs avec le rôle 'client_admin' à accéder à cette route
+    public ResponseEntity<List<String>> getUserRoles(@PathVariable String id) {
+
+            List<String> roles = keycloakService.getUserRoles(id);  // Appel de la méthode que nous avons définie dans KeycloakServiceImpl
+            return ResponseEntity.ok(roles);  // Retourne les rôles de l'utilisateur
+
+    }
+
 }
