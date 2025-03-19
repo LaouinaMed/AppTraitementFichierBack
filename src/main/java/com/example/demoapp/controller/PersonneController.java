@@ -39,7 +39,7 @@ public class PersonneController {
 
     @PostMapping
     @PreAuthorize("hasRole('client_admin')")
-    public ResponseEntity<Personne> addPersonne(@Valid @RequestBody Personne personne) {
+    public ResponseEntity<Personne> addPersonne( @RequestBody Personne personne) {
         return ResponseEntity.status(HttpStatus.CREATED).body(personneService.addPersonne(personne));
     }
 

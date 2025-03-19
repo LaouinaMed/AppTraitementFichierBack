@@ -11,6 +11,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.logging.Level;
@@ -121,15 +122,23 @@ public class PersonneServiceImpl implements PersonneService {
             Personne personne = personneRepository.findById(id)
                     .orElseThrow(() -> new IllegalArgumentException("Personne non trouvée"));
 
-            if (personneDetails.getCin() != null && !personneDetails.getCin().equals(personne.getCin())
-                    && !isCinValid(personneDetails.getCin())) {
+            if (personneDetails.getCin() != null || !isCinValid(personneDetails.getCin())
+                    || personneRepository.existsByCin(personneDetails.getCin()) )
+                     {
                 throw new IllegalArgumentException("CIN invalide");
             }
 
-            if (personneDetails.getTel() != null && !personneDetails.getTel().equals(personne.getTel())
-                    && !isTelValid(personneDetails.getTel())) {
+            if (personneDetails.getTel() != null || !isTelValid(personneDetails.getTel())
+                    || personneRepository.existsByTel(personneDetails.getTel())) {
                 throw new IllegalArgumentException("Numéro de téléphone invalide");
             }
+
+            if(personneDetails.getEmail() != null || !isEmailValid(personneDetails.getEmail())
+                    || personneRepository.existsByEmail(personneDetails.getEmail())){
+                throw new IllegalArgumentException("Numéro de téléphone invalide");
+            }
+
+
 
             personne.setCin(personneDetails.getCin());
             personne.setNom(personneDetails.getNom());
@@ -173,7 +182,7 @@ public class PersonneServiceImpl implements PersonneService {
     }
 
     @Override
-    public Iterable<Personne> getAllPersonnes() {
+    public List<Personne> getAllPersonnes() {
         try {
             return personneRepository.findAll();
         } catch (Exception e) {
