@@ -72,12 +72,23 @@ public class PersonneController {
     }
 
     @GetMapping("/roles/{id}")
-    @PreAuthorize("hasRole('client_admin')")  // Autoriser uniquement les utilisateurs avec le rôle 'client_admin' à accéder à cette route
+    @PreAuthorize("hasRole('client_admin')")
     public ResponseEntity<List<String>> getUserRoles(@PathVariable String id) {
 
-            List<String> roles = keycloakService.getUserRoles(id);  // Appel de la méthode que nous avons définie dans KeycloakServiceImpl
-            return ResponseEntity.ok(roles);  // Retourne les rôles de l'utilisateur
+            List<String> roles = keycloakService.getUserRoles(id);
+            return ResponseEntity.ok(roles);
 
+    }
+
+    @PutMapping("/roles/{id}")
+    @PreAuthorize("hasRole('client_admin')")
+    public ResponseEntity<String> assignRoleToUser(@PathVariable String id, @RequestParam String roleName) {
+        try {
+            keycloakService.assignRoleToUser(id, roleName);
+            return ResponseEntity.ok("Rôle " + roleName + " attribué à l'utilisateur " + id);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
     }
 
 }

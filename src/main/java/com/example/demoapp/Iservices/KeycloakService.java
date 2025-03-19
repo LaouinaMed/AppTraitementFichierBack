@@ -11,5 +11,5 @@ public interface KeycloakService {
 
     public void deleteUserInKeycloak(String keycloakUserId);
 
-    //List<String> getUserRolesInKeycloak(String keycloakUserId);
+    List<String> getUserRoles(String keycloakUserId);
 }

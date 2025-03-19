@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -114,16 +115,6 @@ public class KeycloakServiceImpl implements KeycloakService {
 
     public List<String> getUserRoles(String keycloakUserId) {
         try {
-            /*
-            UserRepresentation user = keycloak.realm("appDemo").users().get(keycloakUserId).toRepresentation();
-
-            //List<RoleRepresentation> roles = keycloak.realm("appDemo").users().get(keycloakUserId).roles().clientLevel("clientAppDemo").listAll();
-
-            //List<RoleRepresentation> roles = keycloak.realm("appDemo").users().get(keycloakUserId).roles().getAll().getRealmMappings();
-
-            List<RoleRepresentation> roles = keycloak.realm("appDemo").users().get(keycloakUserId).roles().realmLevel().listAll();
-
-            System.out.println("###############################################"); */
 
             String clientId = "clientAppDemo";
 
@@ -153,6 +144,52 @@ public class KeycloakServiceImpl implements KeycloakService {
             throw new RuntimeException("Erreur Keycloak : " + e.getMessage(), e);
         }
     }
+
+
+    public void assignRoleToUser(String keycloakUserId, String roleName) {
+        try {
+            String clientId = "clientAppDemo";
+
+            // Trouver le client par son ID
+            List<ClientRepresentation> clients = keycloak.realm("appDemo").clients().findByClientId(clientId);
+            if (clients.isEmpty()) {
+                throw new RuntimeException("Client introuvable : " + clientId);
+            }
+            String clientUuid = clients.get(0).getId();
+
+            // Récupérer les rôles du client
+            List<RoleRepresentation> clientRoles = keycloak.realm("appDemo")
+                    .clients()
+                    .get(clientUuid)
+                    .roles()
+                    .list();
+
+            // Vérifier si le rôle existe
+            Optional<RoleRepresentation> roleOptional = clientRoles.stream()
+                    .filter(role -> role.getName().equals(roleName))
+                    .findFirst();
+
+            if (!roleOptional.isPresent()) {
+                throw new RuntimeException("Le rôle " + roleName + " n'existe pas dans le client " + clientId);
+            }
+
+            RoleRepresentation roleToAssign = roleOptional.get();
+
+            // Attribuer le rôle à l'utilisateur
+            keycloak.realm("appDemo")
+                    .users()
+                    .get(keycloakUserId)
+                    .roles()
+                    .clientLevel(clientUuid)
+                    .add(Collections.singletonList(roleToAssign));
+
+            log.info("Rôle " + roleName + " attribué à l'utilisateur " + keycloakUserId);
+        } catch (Exception e) {
+            log.error("Erreur lors de l'attribution du rôle à l'utilisateur Keycloak", e);
+            throw new RuntimeException("Erreur Keycloak : " + e.getMessage(), e);
+        }
+    }
+
 
 
 }
