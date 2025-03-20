@@ -190,6 +190,68 @@ public class KeycloakServiceImpl implements KeycloakService {
         }
     }
 
+    public List<String> getAllClientRoles() {
+        try {
+            String clientId = "clientAppDemo";
+
+            List<ClientRepresentation> clients = keycloak.realm("appDemo").clients().findByClientId(clientId);
+            if (clients.isEmpty()) {
+                throw new RuntimeException("Client introuvable : " + clientId);
+            }
+            String clientUuid = clients.get(0).getId();
+
+            List<RoleRepresentation> clientRoles = keycloak.realm("appDemo")
+                    .clients()
+                    .get(clientUuid)
+                    .roles()
+                    .list();
+
+            List<String> roleNames = new ArrayList<>();
+            for (RoleRepresentation role : clientRoles) {
+                roleNames.add(role.getName());
+            }
+
+            return roleNames;
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération des rôles du client Keycloak", e);
+            throw new RuntimeException("Erreur Keycloak : " + e.getMessage(), e);
+        }
+    }
+
+    public void removeRoleFromUser(String userId, String roleName) {
+        try {
+            // Récupérer le client
+            String clientId = "clientAppDemo";
+            List<ClientRepresentation> clients = keycloak.realm("appDemo").clients().findByClientId(clientId);
+            if (clients.isEmpty()) {
+                throw new RuntimeException("Client introuvable : " + clientId);
+            }
+            String clientUuid = clients.get(0).getId();
+
+            // Récupérer le rôle à supprimer
+            List<RoleRepresentation> clientRoles = keycloak.realm("appDemo")
+                    .clients()
+                    .get(clientUuid)
+                    .roles()
+                    .list();
+
+            RoleRepresentation roleToRemove = clientRoles.stream()
+                    .filter(role -> role.getName().equals(roleName))
+                    .findFirst()
+                    .orElseThrow(() -> new RuntimeException("Rôle non trouvé"));
+
+            // Supprimer le rôle de l'utilisateur
+            keycloak.realm("appDemo")
+                    .users()
+                    .get(userId)
+                    .roles()
+                    .clientLevel(clientUuid)
+                    .remove(Collections.singletonList(roleToRemove));
+        } catch (Exception e) {
+            throw new RuntimeException("Erreur lors de la suppression du rôle : " + e.getMessage(), e);
+        }
+    }
+
 
 
 }

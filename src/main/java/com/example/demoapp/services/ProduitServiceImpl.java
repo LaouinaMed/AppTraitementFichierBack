@@ -66,6 +66,7 @@ public class ProduitServiceImpl implements ProduitService {
 
         produit.setLibeller(produitDetails.getLibeller());
         produit.setQuantite(produitDetails.getQuantite());
+        produit.setPrix(produitDetails.getPrix());
 
         return produitRepository.save(produit);
 
