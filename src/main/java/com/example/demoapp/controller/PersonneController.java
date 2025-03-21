@@ -30,7 +30,6 @@ public class PersonneController {
 
     private final KeycloakServiceImpl keycloakService;
 
-    private static final Logger log = Logger.getLogger(PersonneController.class.getName());
 
     @PostMapping("/upload")
     @PreAuthorize("hasRole('client_admin')")
@@ -48,7 +47,7 @@ public class PersonneController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('client_admin')")
-    public ResponseEntity<Personne> updatePersonne(@Valid @PathVariable Long id, @Nullable @RequestBody Personne personne) {
+    public ResponseEntity<Personne> updatePersonne(@PathVariable Long id, @Nullable @RequestBody Personne personne) {
         return ResponseEntity.ok(personneService.updatePersonne(id, personne));
     }
 

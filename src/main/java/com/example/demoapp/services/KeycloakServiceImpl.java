@@ -8,7 +8,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.idm.ClientRepresentation;
-import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.stereotype.Service;
@@ -24,6 +23,11 @@ import java.util.Optional;
 public class KeycloakServiceImpl implements KeycloakService {
 
     private final Keycloak keycloak;
+    String clientId = "clientAppDemo";
+
+    String nameRealm = "appDemo";
+
+
 
     public String createUserInKeycloak(Personne personne) {
 
@@ -37,27 +41,24 @@ public class KeycloakServiceImpl implements KeycloakService {
             user.setLastName(personne.getNom());
             user.setEmail(personne.getEmail());
             user.setEnabled(true);
-
-
             user.setCredentials(Collections.emptyList());
 
             Response response = usersResource.create(user);
 
             if (response.getStatus() != 201) {
-                throw new RuntimeException("Échec de la création de l'utilisateur Keycloak. Statut: " + response.getStatus());
+                throw new RuntimeException("Echec de la creation de utilisation Keycloak. Statut: " + response.getStatus());
             }
 
             String keycloakUserId = response.getLocation().getPath().split("/")[response.getLocation().getPath().split("/").length - 1];
 
 
-            String clientId = "clientAppDemo";
-            List<ClientRepresentation> clients = keycloak.realm("appDemo").clients().findByClientId(clientId);
+            List<ClientRepresentation> clients =  keycloak.realm(nameRealm).clients().findByClientId(clientId);
+
             if (clients.isEmpty()) {
                 throw new RuntimeException("Client introuvable : " + clientId);
             }
-            String clientUuid = clients.get(0).getId(); // 🔥 Correction ici ! Utiliser getId() au lieu de getName()
+            String clientUuid = clients.get(0).getId();
 
-            // Récupérer le rôle "user" du client
             List<RoleRepresentation> clientRoles = keycloak.realm("appDemo")
                     .clients()
                     .get(clientUuid)
@@ -65,11 +66,10 @@ public class KeycloakServiceImpl implements KeycloakService {
                     .list();
 
             RoleRepresentation userRole = clientRoles.stream()
-                    .filter(role -> role.getName().equals("client_user")) // Vérifie si le rôle s'appelle "user"
+                    .filter(role -> role.getName().equals("client_user"))
                     .findFirst()
                     .orElseThrow(() -> new RuntimeException("Rôle 'user' introuvable pour le client " + clientId));
 
-            // Attribuer le rôle client "user" à l'utilisateur
             keycloak.realm("appDemo").users().get(keycloakUserId).roles().clientLevel(clientUuid).add(Collections.singletonList(userRole));
 
             keycloak.realm("appDemo")
@@ -115,10 +115,8 @@ public class KeycloakServiceImpl implements KeycloakService {
 
     public List<String> getUserRoles(String keycloakUserId) {
         try {
+            List<ClientRepresentation> clients =  keycloak.realm(nameRealm).clients().findByClientId(clientId);
 
-            String clientId = "clientAppDemo";
-
-            List<ClientRepresentation> clients = keycloak.realm("appDemo").clients().findByClientId(clientId);
             if (clients.isEmpty()) {
                 throw new RuntimeException("Client introuvable : " + clientId);
             }
@@ -148,23 +146,21 @@ public class KeycloakServiceImpl implements KeycloakService {
 
     public void assignRoleToUser(String keycloakUserId, String roleName) {
         try {
-            String clientId = "clientAppDemo";
 
-            // Trouver le client par son ID
-            List<ClientRepresentation> clients = keycloak.realm("appDemo").clients().findByClientId(clientId);
+            List<ClientRepresentation> clients =  keycloak.realm(nameRealm).clients().findByClientId(clientId);
+
+
             if (clients.isEmpty()) {
                 throw new RuntimeException("Client introuvable : " + clientId);
             }
             String clientUuid = clients.get(0).getId();
 
-            // Récupérer les rôles du client
             List<RoleRepresentation> clientRoles = keycloak.realm("appDemo")
                     .clients()
                     .get(clientUuid)
                     .roles()
                     .list();
 
-            // Vérifier si le rôle existe
             Optional<RoleRepresentation> roleOptional = clientRoles.stream()
                     .filter(role -> role.getName().equals(roleName))
                     .findFirst();
@@ -175,7 +171,6 @@ public class KeycloakServiceImpl implements KeycloakService {
 
             RoleRepresentation roleToAssign = roleOptional.get();
 
-            // Attribuer le rôle à l'utilisateur
             keycloak.realm("appDemo")
                     .users()
                     .get(keycloakUserId)
@@ -183,7 +178,7 @@ public class KeycloakServiceImpl implements KeycloakService {
                     .clientLevel(clientUuid)
                     .add(Collections.singletonList(roleToAssign));
 
-            log.info("Rôle " + roleName + " attribué à l'utilisateur " + keycloakUserId);
+            log.info("Role " + roleName + " attribué à l'utilisateur " + keycloakUserId);
         } catch (Exception e) {
             log.error("Erreur lors de l'attribution du rôle à l'utilisateur Keycloak", e);
             throw new RuntimeException("Erreur Keycloak : " + e.getMessage(), e);
@@ -192,9 +187,8 @@ public class KeycloakServiceImpl implements KeycloakService {
 
     public List<String> getAllClientRoles() {
         try {
-            String clientId = "clientAppDemo";
+            List<ClientRepresentation> clients =  keycloak.realm(nameRealm).clients().findByClientId(clientId);
 
-            List<ClientRepresentation> clients = keycloak.realm("appDemo").clients().findByClientId(clientId);
             if (clients.isEmpty()) {
                 throw new RuntimeException("Client introuvable : " + clientId);
             }
@@ -220,9 +214,8 @@ public class KeycloakServiceImpl implements KeycloakService {
 
     public void removeRoleFromUser(String userId, String roleName) {
         try {
-            // Récupérer le client
-            String clientId = "clientAppDemo";
-            List<ClientRepresentation> clients = keycloak.realm("appDemo").clients().findByClientId(clientId);
+            List<ClientRepresentation> clients =  keycloak.realm(nameRealm).clients().findByClientId(clientId);
+
             if (clients.isEmpty()) {
                 throw new RuntimeException("Client introuvable : " + clientId);
             }
@@ -240,7 +233,6 @@ public class KeycloakServiceImpl implements KeycloakService {
                     .findFirst()
                     .orElseThrow(() -> new RuntimeException("Rôle non trouvé"));
 
-            // Supprimer le rôle de l'utilisateur
             keycloak.realm("appDemo")
                     .users()
                     .get(userId)
@@ -251,7 +243,4 @@ public class KeycloakServiceImpl implements KeycloakService {
             throw new RuntimeException("Erreur lors de la suppression du rôle : " + e.getMessage(), e);
         }
     }
-
-
-
 }

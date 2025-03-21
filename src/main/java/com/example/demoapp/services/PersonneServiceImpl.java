@@ -122,22 +122,25 @@ public class PersonneServiceImpl implements PersonneService {
             Personne personne = personneRepository.findById(id)
                     .orElseThrow(() -> new IllegalArgumentException("Personne non trouvée"));
 
-            if (personneDetails.getCin() != null || !isCinValid(personneDetails.getCin())
-                    || personneRepository.existsByCin(personneDetails.getCin()) )
-                     {
+
+            if ( personneRepository.existsByCinAndIdNot(personneDetails.getCin(),id)
+                || personneRepository.existsByTelAndIdNot(personneDetails.getTel(),id)
+                || personneRepository.existsByEmailAndIdNot(personneDetails.getEmail(),id)) {
+
+                throw new IllegalArgumentException("CIN ou Tel ou Email existe deja");
+            }
+
+            if (personneDetails.getCin() != null && !isCinValid(personneDetails.getCin())) {
                 throw new IllegalArgumentException("CIN invalide");
             }
 
-            if (personneDetails.getTel() != null || !isTelValid(personneDetails.getTel())
-                    || personneRepository.existsByTel(personneDetails.getTel())) {
+            if (personneDetails.getTel() != null && !isTelValid(personneDetails.getTel())) {
                 throw new IllegalArgumentException("Numéro de téléphone invalide");
             }
 
-            if(personneDetails.getEmail() != null || !isEmailValid(personneDetails.getEmail())
-                    || personneRepository.existsByEmail(personneDetails.getEmail())){
+            if(personneDetails.getEmail() != null && !isEmailValid(personneDetails.getEmail())){
                 throw new IllegalArgumentException("Numéro de téléphone invalide");
             }
-
 
 
             personne.setCin(personneDetails.getCin());
