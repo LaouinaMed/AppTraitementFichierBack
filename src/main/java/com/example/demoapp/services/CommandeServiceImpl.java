@@ -1,6 +1,7 @@
 package com.example.demoapp.services;
 
 import com.example.demoapp.Iservices.CommandeService;
+import com.example.demoapp.Iservices.KeycloakService;
 import com.example.demoapp.entities.Commande;
 import com.example.demoapp.entities.Personne;
 import com.example.demoapp.entities.Produit;
@@ -10,7 +11,6 @@ import com.example.demoapp.repositories.PersonneRepository;
 import com.example.demoapp.repositories.ProduitRepository;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -20,11 +20,30 @@ public class CommandeServiceImpl implements CommandeService {
     private final CommandeRepository commandeRepository;
     private final ProduitRepository produitRepository;
     private final PersonneRepository personneRepository;
+    private final KeycloakService keycloakService;  // Injecter le service Keycloak
 
-    public CommandeServiceImpl(CommandeRepository commandeRepository, ProduitRepository produitRepository, PersonneRepository personneRepository) {
+
+    public CommandeServiceImpl(CommandeRepository commandeRepository, ProduitRepository produitRepository, PersonneRepository personneRepository, KeycloakService keycloakService) {
         this.commandeRepository = commandeRepository;
         this.produitRepository = produitRepository;
         this.personneRepository = personneRepository;
+        this.keycloakService = keycloakService;
+    }
+
+
+    @Override
+    public List<Commande> getAllCommandes(String keycloakUserId) {
+        try {
+            List<String> userRoles = keycloakService.getUserRoles(keycloakUserId);
+
+            if (userRoles.contains("client_admin")) {
+                return (List<Commande>) commandeRepository.findAll();
+            } else {
+                return commandeRepository.findByPersonneKeycloakId(keycloakUserId);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Erreur lors de la récupération des commandes : " + e.getMessage());
+        }
     }
 
     @Override
@@ -113,16 +132,7 @@ public class CommandeServiceImpl implements CommandeService {
         }
     }
 
-    @Override
 
-    public List<Commande> getAllCommandes() {
-        try {
-            List<Commande> commandes = (List<Commande>) commandeRepository.findAll();
-            return commandes;
-        } catch (Exception e) {
-            throw new RuntimeException("Erreur lors de la récupération des commandes : " + e.getMessage());
-        }
-    }
 
     @Override
 

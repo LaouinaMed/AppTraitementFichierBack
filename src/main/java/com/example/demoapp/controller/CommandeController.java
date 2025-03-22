@@ -4,6 +4,8 @@ import com.example.demoapp.entities.Commande;
 import com.example.demoapp.services.CommandeServiceImpl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -61,12 +63,18 @@ public class CommandeController {
     }
 
     // Endpoint pour afficher toutes les commandes
-    @GetMapping()
-    @PreAuthorize("hasRole('client_admin')")
-
+    @GetMapping
+    @PreAuthorize("hasRole('client_admin') or hasRole('client_user')")
     public ResponseEntity<List<Commande>> getAllCommandes() {
-        List<Commande> commandes = commandeService.getAllCommandes();
-        return ResponseEntity.ok(commandes);
+
+            // Récupérer l'ID de l'utilisateur connecté depuis le contexte de sécurité
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String keycloakUserId = authentication.getName();  // Cela suppose que le nom d'utilisateur dans Keycloak est l'ID de l'utilisateur
+
+
+            List<Commande> commandes = commandeService.getAllCommandes(keycloakUserId);
+
+            return ResponseEntity.ok(commandes);
     }
 
     // Endpoint pour afficher les statuts disponibles (confirmé/rejeté)

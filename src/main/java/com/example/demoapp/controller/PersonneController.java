@@ -59,7 +59,7 @@ public class PersonneController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('client_admin') or hasRole('client_user')")
+    @PreAuthorize("hasRole('client_admin')")
 
     public ResponseEntity<List<Personne>> getAllPersonnes() {
         return ResponseEntity.ok((List<Personne>) personneService.getAllPersonnes());

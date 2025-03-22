@@ -11,7 +11,6 @@ public interface CommandeService {
     public void supprimerCommande(Long commandeId) ;
     public Commande modifierCommande(Long commandeId, String tel, String nom, String libellerProduit, Long quantite, String statut) ;
 
-    public List<Commande> getAllCommandes() ;
-
+    List<Commande> getAllCommandes(String keycloakUserId);
     }
 
