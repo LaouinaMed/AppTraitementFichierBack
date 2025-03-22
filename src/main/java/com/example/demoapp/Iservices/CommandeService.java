@@ -9,7 +9,7 @@ public interface CommandeService {
     public Commande ajouterCommande(String tel, String nom, String libellerProduit, Long quantite, String statut) ;
     public List<String> getStatutsDisponibles() ;
     public void supprimerCommande(Long commandeId) ;
-    public Commande modifierCommande(Long commandeId, String tel, String nom, String libellerProduit, Long quantite, String statut) ;
+    public Commande modifierCommande(Long commandeId, String tel, String nom, String libellerProduit, Long quantite, String statut,String keycloakUserId) ;
 
     List<Commande> getAllCommandes(String keycloakUserId);
     }

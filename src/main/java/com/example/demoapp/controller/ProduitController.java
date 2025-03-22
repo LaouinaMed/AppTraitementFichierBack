@@ -39,7 +39,7 @@ public class ProduitController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('client_admin') or hasRole('client_user')")
+    @PreAuthorize("hasRole('client_admin') or hasRole('client_user') or hasRole('client_user_edit_statut')")
 
     public ResponseEntity<List<Produit>> getAllPersonnes() {
         return ResponseEntity.ok((List<Produit>) produitService.getAllProduits());

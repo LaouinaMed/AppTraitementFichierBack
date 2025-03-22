@@ -2,7 +2,9 @@ package com.example.demoapp.services;
 
 import com.example.demoapp.Iservices.PersonneService;
 import com.example.demoapp.entities.Personne;
+import com.example.demoapp.repositories.CommandeRepository;
 import com.example.demoapp.repositories.PersonneRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -22,12 +24,14 @@ public class PersonneServiceImpl implements PersonneService {
 
     private final PersonneRepository personneRepository;
     private KeycloakServiceImpl keycloakService;
+    private CommandeRepository commandeRepository;
     private static final Logger log = Logger.getLogger(PersonneServiceImpl.class.getName());
 
     @Autowired
-    public PersonneServiceImpl(PersonneRepository personneRepository, KeycloakServiceImpl keycloakService) {
+    public PersonneServiceImpl(PersonneRepository personneRepository, KeycloakServiceImpl keycloakService,CommandeRepository commandeRepository) {
         this.personneRepository = personneRepository;
         this.keycloakService = keycloakService;
+        this.commandeRepository = commandeRepository;
     }
 
     private boolean isCinValid(String cin) {
@@ -148,6 +152,7 @@ public class PersonneServiceImpl implements PersonneService {
             personne.setPrenom(personneDetails.getPrenom());
             personne.setTel(personneDetails.getTel());
             personne.setAdresse(personneDetails.getAdresse());
+            //personne.setEmail(personneDetails.getEmail());
 
             keycloakService.updateUserInKeycloak(personne.getKeycloakId(), personne);
 
@@ -160,13 +165,13 @@ public class PersonneServiceImpl implements PersonneService {
     }
 
     @Override
+    @Transactional
     public void deletePersonne(Long id) {
         try {
             Personne personne = personneRepository.findById(id)
                     .orElseThrow(() -> new IllegalArgumentException("Personne non trouvée"));
-
+            commandeRepository.deleteByPersonne(personne);
             keycloakService.deleteUserInKeycloak(personne.getKeycloakId());
-
             personneRepository.delete(personne);
         } catch (Exception e) {
             log.log(Level.SEVERE, "Erreur lors de la suppression de la personne", e);

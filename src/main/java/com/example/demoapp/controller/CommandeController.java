@@ -37,9 +37,11 @@ public class CommandeController {
 
     // Endpoint pour modifier une commande
     @PutMapping("/{commandeId}")
-    @PreAuthorize("hasRole('client_admin')")
-
+    @PreAuthorize("hasRole('client_admin') or hasRole('client_user_edit_statut')")
     public ResponseEntity<Commande> modifierCommande(@PathVariable Long commandeId, @RequestBody Commande commande) {
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String keycloakUserId = authentication.getName();
 
         Commande updatedCommande = commandeService.modifierCommande(
                 commandeId,
@@ -47,7 +49,8 @@ public class CommandeController {
                 commande.getPersonne().getNom(),
                 commande.getProduit().getLibeller(),
                 commande.getQuantite(),
-                commande.getStatut().name()
+                commande.getStatut().name(),
+                keycloakUserId
         );
         return ResponseEntity.ok(updatedCommande);
 
@@ -64,7 +67,7 @@ public class CommandeController {
 
     // Endpoint pour afficher toutes les commandes
     @GetMapping
-    @PreAuthorize("hasRole('client_admin') or hasRole('client_user')")
+    @PreAuthorize("hasRole('client_admin') or hasRole('client_user') or hasRole('client_user_edit_statut')")
     public ResponseEntity<List<Commande>> getAllCommandes() {
 
             // Récupérer l'ID de l'utilisateur connecté depuis le contexte de sécurité
@@ -79,7 +82,7 @@ public class CommandeController {
 
     // Endpoint pour afficher les statuts disponibles (confirmé/rejeté)
     @GetMapping("/statuts")
-    @PreAuthorize("hasRole('client_admin')")
+    @PreAuthorize("hasRole('client_admin') or hasRole('client_user_edit_statut')")
 
     public ResponseEntity<List<String>> getStatutsDisponibles() {
         List<String> statuts = commandeService.getStatutsDisponibles();
