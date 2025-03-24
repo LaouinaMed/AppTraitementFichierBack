@@ -1,9 +1,15 @@
 package com.example.demoapp.batch.listener;
 
+import com.example.demoapp.batch.processor.CommandeProcessor;
 import com.example.demoapp.batch.processor.PersonneProcessor;
+import com.example.demoapp.dto.DtoCommande;
+import com.example.demoapp.entities.Commande;
 import com.example.demoapp.entities.Personne;
+import com.example.demoapp.enumeration.StatutCommande;
+import com.example.demoapp.repositories.CommandeRepository;
 import com.example.demoapp.repositories.LogErreurRepository;
 import com.example.demoapp.repositories.PersonneRepository;
+import com.example.demoapp.repositories.ProduitRepository;
 import jakarta.annotation.PostConstruct;
 import org.springframework.batch.core.*;
 import org.springframework.batch.core.job.builder.JobBuilder;
@@ -30,6 +36,7 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
+import java.util.Collections;
 import java.util.Date;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -44,9 +51,11 @@ public class DirectoryWatcher {
     private final JobRepository jobRepository; //meta donnees etat d'un job
     private final PlatformTransactionManager platformTransactionManager; //gerer les tensactions
     private final PersonneRepository personneRepository;
+    private final CommandeRepository commandeRepository;
+    private final ProduitRepository produitRepository;
     private final LogErreurRepository logErreurRepository;
 
-    private  PersonneProcessor processor;
+    private  CommandeProcessor processor;
 
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
@@ -54,11 +63,13 @@ public class DirectoryWatcher {
 
 
     @Autowired
-    public DirectoryWatcher(JobLauncher jobLauncher, JobRepository jobRepository, PlatformTransactionManager platformTransactionManager, PersonneRepository repository,LogErreurRepository logErreurRepository) {
+    public DirectoryWatcher(JobLauncher jobLauncher, JobRepository jobRepository, PlatformTransactionManager platformTransactionManager, PersonneRepository repository, CommandeRepository commandeRepository, ProduitRepository produitRepository, LogErreurRepository logErreurRepository) {
         this.jobLauncher = jobLauncher;
         this.jobRepository = jobRepository;
         this.platformTransactionManager = platformTransactionManager;
         this.personneRepository = repository;
+        this.commandeRepository = commandeRepository;
+        this.produitRepository = produitRepository;
         this.logErreurRepository =logErreurRepository;
 
     }
@@ -133,7 +144,7 @@ public class DirectoryWatcher {
         logger.info("**************import Step - Start");
 
         return new StepBuilder("txtImport", jobRepository)
-                .<Personne, Personne>chunk(2, platformTransactionManager)
+                .<DtoCommande, Commande>chunk(2, platformTransactionManager)
                 .reader(multiResourceItemReader())
                 .processor(processor())
                 .writer(writer())
@@ -148,8 +159,8 @@ public class DirectoryWatcher {
 
 
 
-    public FlatFileItemReader<Personne> itemReader(){
-        FlatFileItemReader<Personne> itemReader = new FlatFileItemReader<>();
+    public FlatFileItemReader<DtoCommande> itemReader(){
+        FlatFileItemReader<DtoCommande> itemReader = new FlatFileItemReader<>();
         logger.info("**************Reading ItemReader");
 
         itemReader.setName("txtReader");
@@ -159,8 +170,8 @@ public class DirectoryWatcher {
         return itemReader;
     }
 
-    public MultiResourceItemReader<Personne> multiResourceItemReader() throws IOException {
-        MultiResourceItemReader<Personne> multiResourceItemReader = new MultiResourceItemReader<>();
+    public MultiResourceItemReader<DtoCommande> multiResourceItemReader() throws IOException {
+        MultiResourceItemReader<DtoCommande> multiResourceItemReader = new MultiResourceItemReader<>();
         logger.info("**************Reader");
 
         Resource[] resources = new PathMatchingResourcePatternResolver()
@@ -172,40 +183,47 @@ public class DirectoryWatcher {
         return multiResourceItemReader;
     }
 
-    private LineMapper<Personne> lineMapper(){
-        DefaultLineMapper<Personne> lineMapper = new DefaultLineMapper<>();
+    private LineMapper<DtoCommande> lineMapper(){
+        DefaultLineMapper<DtoCommande> lineMapper = new DefaultLineMapper<>();
 
         DelimitedLineTokenizer lineTokenizer = new DelimitedLineTokenizer();
         lineTokenizer.setDelimiter("|");
         lineTokenizer.setStrict(false);
-        lineTokenizer.setNames("cin","prenom","nom","tel","adresse");
+        //lineTokenizer.setNames("cin","prenom","nom","tel","adresse");
+        lineTokenizer.setNames("nom","tel","libeller","quantite","statut");
 
-        BeanWrapperFieldSetMapper<Personne> fieldSetMapper =new BeanWrapperFieldSetMapper<>();
-        fieldSetMapper.setTargetType(Personne.class);
+        BeanWrapperFieldSetMapper<DtoCommande> fieldSetMapper =new BeanWrapperFieldSetMapper<>();
+        fieldSetMapper.setTargetType(DtoCommande.class);
+
 
         lineMapper.setLineTokenizer(lineTokenizer);
         lineMapper.setFieldSetMapper(fieldSetMapper);
 
         return lineMapper;
     }
-
+/*
     public PersonneProcessor processor(){
         logger.info("**************Processing: " );
         return new PersonneProcessor(personneRepository,logErreurRepository);
     }
+*/
+    public CommandeProcessor processor(){
+        logger.info("**************Processing: " );
+        return new CommandeProcessor(commandeRepository,logErreurRepository,personneRepository,produitRepository);
+    }
 
-    public RepositoryItemWriter<Personne> writer(){
-        RepositoryItemWriter<Personne> writer = new RepositoryItemWriter<>();
+    public RepositoryItemWriter<Commande> writer(){
+        RepositoryItemWriter<Commande> writer = new RepositoryItemWriter<>();
         logger.info("**************Writer");
 
-        writer.setRepository(personneRepository);
+        writer.setRepository(commandeRepository);
         writer.setMethodName("save");
 
         return writer;
     }
 
     private void launchJobForFile(String fileName) {
-        long timestamp = System.currentTimeMillis(); // 🔥 Capture du time
+        long timestamp = System.currentTimeMillis(); // Capture du time
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         String formattedDate = sdf.format(new Date(timestamp));
         JobParameters jobParameters = new JobParametersBuilder()
@@ -215,7 +233,7 @@ public class DirectoryWatcher {
                 .toJobParameters();
         try {
             if (logger.isLoggable(Level.INFO)) {
-                logger.info(MessageFormat.format("✅ Le fichier a été déplacé sous un nouveau nom : {0}" , fileName));
+                logger.info(MessageFormat.format(" Le fichier a été déplacé sous un nouveau nom : {0}" , fileName));
             }
             Job job = createJob(); // Crée le job ici aussi
             jobLauncher.run(job, jobParameters);

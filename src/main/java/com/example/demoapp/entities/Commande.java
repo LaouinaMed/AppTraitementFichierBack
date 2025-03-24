@@ -23,10 +23,7 @@ public class Commande {
 
     @Enumerated(EnumType.STRING)
     private StatutCommande statut;
-
-
     private Long quantite;
-
     private Long montant;
     @ManyToOne
     private Personne personne;

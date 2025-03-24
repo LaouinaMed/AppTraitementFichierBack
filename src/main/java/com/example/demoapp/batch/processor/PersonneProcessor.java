@@ -2,6 +2,7 @@ package com.example.demoapp.batch.processor;
 
 import com.example.demoapp.entities.LogErreur;
 import com.example.demoapp.entities.Personne;
+import com.example.demoapp.repositories.CommandeRepository;
 import com.example.demoapp.repositories.LogErreurRepository;
 import com.example.demoapp.repositories.PersonneRepository;
 
@@ -35,6 +36,7 @@ public class PersonneProcessor implements ItemProcessor<Personne, Personne> {
         this.personneRepository =personneRepository;
         this.logErreurRepository = logErreurRepository;
     }
+
 
     public void chargerCinsEtTels() {
         processedCins.clear();

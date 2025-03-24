@@ -66,6 +66,8 @@ public class FileProcessingListener implements StepExecutionListener {
 
                     if (stepExecution.getStatus().isUnsuccessful() ) {
                         moveFile(file, errorDirectory);
+                        logger.info("**************afterStep");
+
                     } else {
                         moveFile(file, validDirectory);
                     }
