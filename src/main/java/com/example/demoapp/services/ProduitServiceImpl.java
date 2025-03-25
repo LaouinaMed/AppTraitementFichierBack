@@ -10,14 +10,10 @@ import java.util.Optional;
 
 @Service
 public class ProduitServiceImpl implements ProduitService {
-
     private final ProduitRepository produitRepository;
-
-
     public ProduitServiceImpl(ProduitRepository produitRepository) {
         this.produitRepository = produitRepository;
     }
-
 
     @Override
     public Produit addProduit(Produit produit) {
@@ -27,14 +23,10 @@ public class ProduitServiceImpl implements ProduitService {
            }
            else if(produit.getQuantite() <= 0){
                throw new IllegalArgumentException("Qte doit etre superieure de 0");
-
            }
-
            else if(produit.getPrix() <= 0){
                throw new IllegalArgumentException("Prix doit etre superieure de 0");
-
            }
-
            else {
                return produitRepository.save(produit);
            }
@@ -64,6 +56,11 @@ public class ProduitServiceImpl implements ProduitService {
             throw new IllegalArgumentException("La quantité doit être supérieure à 0");
         }
 
+        if(produit.getPrix() <= 0){
+            throw new IllegalArgumentException("Prix doit etre superieure de 0");
+
+        }
+
         produit.setLibeller(produitDetails.getLibeller());
         produit.setQuantite(produitDetails.getQuantite());
         produit.setPrix(produitDetails.getPrix());
@@ -85,12 +82,6 @@ public class ProduitServiceImpl implements ProduitService {
             throw new RuntimeException("Erreur lors de la suppression de la produit : " + e.getMessage(), e);
 
         }
-
-    }
-
-    @Override
-    public Optional<Produit> getProduitById(Long id) {
-        return Optional.empty();
     }
 
     @Override

@@ -12,6 +12,6 @@ public interface PersonneService {
     Personne addPersonne(Personne personne);
     Personne updatePersonne(Long id, Personne personneDetails);
     void deletePersonne(Long id);
-    Optional<Personne> getPersonneById(Long id);
     List<Personne> getAllPersonnes();
+    Optional<Personne> getPersonneById(Long id);
 }

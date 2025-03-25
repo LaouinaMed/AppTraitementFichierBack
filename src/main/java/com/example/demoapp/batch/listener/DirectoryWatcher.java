@@ -62,7 +62,6 @@ public class DirectoryWatcher {
     private static final Logger logger = Logger.getLogger(DirectoryWatcher.class.getName());
 
 
-    @Autowired
     public DirectoryWatcher(JobLauncher jobLauncher, JobRepository jobRepository, PlatformTransactionManager platformTransactionManager, PersonneRepository repository, CommandeRepository commandeRepository, ProduitRepository produitRepository, LogErreurRepository logErreurRepository) {
         this.jobLauncher = jobLauncher;
         this.jobRepository = jobRepository;
@@ -81,7 +80,6 @@ public class DirectoryWatcher {
                 Path directoryPath = Paths.get("C:/Users/simed/Desktop/ReaderBatch");
                 watchDirectory(directoryPath);
             } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
                 logger.severe("Le thread de surveillance a été interrompu : " + e.getMessage());
             } catch (Exception e) {
                 logger.severe("Une erreur est survenue : " + e.getMessage());
@@ -91,13 +89,14 @@ public class DirectoryWatcher {
 
     @EventListener
     public void watchDirectory(Path dirPath) throws IOException, InterruptedException {
+
         try (WatchService watchService = FileSystems.getDefault().newWatchService()) {
             dirPath.register(watchService, StandardWatchEventKinds.ENTRY_CREATE);
 
-            try (Stream<Path> stream = Files.list(dirPath)) {  //  Fermeture automatique du stream
-                stream.filter(Files::isRegularFile)
+            try (Stream<Path> stream = Files.list(dirPath)) {
+                stream.filter(file -> Files.isRegularFile(file))
                         .forEach(file -> {
-                            logger.info("Fichier déjà présent : " + file.getFileName());
+                            logger.info("Fichier est déjà présent : " + file.getFileName());
                             logger.info("Job lancé après présence du fichier");
 
                             launchJobForFile(file.getFileName().toString());
@@ -155,21 +154,6 @@ public class DirectoryWatcher {
                 .build();
     }
 
-
-
-
-
-    public FlatFileItemReader<DtoCommande> itemReader(){
-        FlatFileItemReader<DtoCommande> itemReader = new FlatFileItemReader<>();
-        logger.info("**************Reading ItemReader");
-
-        itemReader.setName("txtReader");
-        itemReader.setLinesToSkip(1);
-        itemReader.setLineMapper(lineMapper()); //convertir chaque ligne un objet java
-        itemReader.setStrict(false);
-        return itemReader;
-    }
-
     public MultiResourceItemReader<DtoCommande> multiResourceItemReader() throws IOException {
         MultiResourceItemReader<DtoCommande> multiResourceItemReader = new MultiResourceItemReader<>();
         logger.info("**************Reader");
@@ -182,6 +166,18 @@ public class DirectoryWatcher {
 
         return multiResourceItemReader;
     }
+
+    public FlatFileItemReader<DtoCommande> itemReader(){
+        FlatFileItemReader<DtoCommande> itemReader = new FlatFileItemReader<>();
+        logger.info("**************Reading ItemReader");
+
+        itemReader.setName("txtReader");
+        itemReader.setLinesToSkip(1);
+        itemReader.setLineMapper(lineMapper());
+        itemReader.setStrict(false);
+        return itemReader;
+    }
+
 
     private LineMapper<DtoCommande> lineMapper(){
         DefaultLineMapper<DtoCommande> lineMapper = new DefaultLineMapper<>();
@@ -223,9 +219,12 @@ public class DirectoryWatcher {
     }
 
     private void launchJobForFile(String fileName) {
-        long timestamp = System.currentTimeMillis(); // Capture du time
+        long timestamp = System.currentTimeMillis();
+
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
         String formattedDate = sdf.format(new Date(timestamp));
+
         JobParameters jobParameters = new JobParametersBuilder()
                 .addString("fileName", fileName)
                 .addLong("timestamp", System.currentTimeMillis())
@@ -235,7 +234,7 @@ public class DirectoryWatcher {
             if (logger.isLoggable(Level.INFO)) {
                 logger.info(MessageFormat.format(" Le fichier a été déplacé sous un nouveau nom : {0}" , fileName));
             }
-            Job job = createJob(); // Crée le job ici aussi
+            Job job = createJob();
             jobLauncher.run(job, jobParameters);
         } catch (Exception e) {
             logger.severe("erreur est survenue : " + e.getMessage());

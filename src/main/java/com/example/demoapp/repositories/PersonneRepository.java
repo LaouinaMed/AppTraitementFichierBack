@@ -15,15 +15,10 @@ public interface PersonneRepository extends JpaRepository<Personne, Long> {
 
     Optional<Personne> findByTel(String tel);
 
-    boolean existsByCin(String cin);
-    boolean existsByTel(String tel);
-    boolean existsByEmail(String email);
     boolean existsByCinAndIdNot(String cin, Long id);
     boolean existsByTelAndIdNot(String tel, Long id);
     boolean existsByEmailAndIdNot(String email, Long id);
-    Personne findByEmailAndIdNot(String email,Long id);
-    Personne findByTelAndIdNot(String tel,Long id);
-    Personne findByCinAndIdNot(String cin,Long id);
+
 
 
     @Query("SELECT p FROM Personne p where p.cin =:cin OR p.tel = :tel OR p.email= :email")

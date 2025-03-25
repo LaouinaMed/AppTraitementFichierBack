@@ -17,5 +17,5 @@ public class DtoCommande {
         private String tel;
         private String libeller;
         private Long quantite;
-        private StatutCommande statut;
+        private String statut;
 }

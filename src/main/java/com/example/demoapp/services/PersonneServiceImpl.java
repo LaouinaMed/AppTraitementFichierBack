@@ -46,7 +46,6 @@ public class PersonneServiceImpl implements PersonneService {
         return email != null && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
     }
 
-
     private static final String STORAGE_DIRECTORY = "C:\\Users\\simed\\Desktop\\ReaderBatch";
 
 
@@ -88,7 +87,6 @@ public class PersonneServiceImpl implements PersonneService {
             if (!isEmailValid(personne.getEmail())) {
                 throw new IllegalArgumentException("Email invalide");
             }
-
 
 /*
             if (personneRepository.findByCin(personne.getCin()).isPresent()) {
@@ -152,7 +150,7 @@ public class PersonneServiceImpl implements PersonneService {
             personne.setPrenom(personneDetails.getPrenom());
             personne.setTel(personneDetails.getTel());
             personne.setAdresse(personneDetails.getAdresse());
-            //personne.setEmail(personneDetails.getEmail());
+            personne.setEmail(personneDetails.getEmail());
 
             keycloakService.updateUserInKeycloak(personne.getKeycloakId(), personne);
 
@@ -170,12 +168,25 @@ public class PersonneServiceImpl implements PersonneService {
         try {
             Personne personne = personneRepository.findById(id)
                     .orElseThrow(() -> new IllegalArgumentException("Personne non trouvée"));
+
             commandeRepository.deleteByPersonne(personne);
             keycloakService.deleteUserInKeycloak(personne.getKeycloakId());
             personneRepository.delete(personne);
+
         } catch (Exception e) {
             log.log(Level.SEVERE, "Erreur lors de la suppression de la personne", e);
             throw new RuntimeException("Erreur lors de la suppression de la personne : " + e.getMessage(), e);
+        }
+    }
+
+
+    @Override
+    public List<Personne> getAllPersonnes() {
+        try {
+            return personneRepository.findAll();
+        } catch (Exception e) {
+            log.log(Level.SEVERE, "Erreur lors de la récupération des personnes", e);
+            throw new RuntimeException("Erreur lors de la récupération des personnes", e);
         }
     }
 
@@ -186,16 +197,6 @@ public class PersonneServiceImpl implements PersonneService {
         } catch (Exception e) {
             log.log(Level.SEVERE, "Erreur lors de la récupération de la personne", e);
             throw new RuntimeException("Erreur lors de la récupération de la personne", e);
-        }
-    }
-
-    @Override
-    public List<Personne> getAllPersonnes() {
-        try {
-            return personneRepository.findAll();
-        } catch (Exception e) {
-            log.log(Level.SEVERE, "Erreur lors de la récupération des personnes", e);
-            throw new RuntimeException("Erreur lors de la récupération des personnes", e);
         }
     }
 }

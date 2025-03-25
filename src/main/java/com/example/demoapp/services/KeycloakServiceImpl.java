@@ -24,7 +24,6 @@ public class KeycloakServiceImpl implements KeycloakService {
 
     private final Keycloak keycloak;
     String clientId = "clientAppDemo";
-
     String nameRealm = "appDemo";
 
 
@@ -32,7 +31,6 @@ public class KeycloakServiceImpl implements KeycloakService {
     public String createUserInKeycloak(Personne personne) {
 
         try {
-
             UsersResource usersResource = keycloak.realm("appDemo").users();
 
             UserRepresentation user = new UserRepresentation();
@@ -221,7 +219,6 @@ public class KeycloakServiceImpl implements KeycloakService {
             }
             String clientUuid = clients.get(0).getId();
 
-            // Récupérer le rôle à supprimer
             List<RoleRepresentation> clientRoles = keycloak.realm("appDemo")
                     .clients()
                     .get(clientUuid)

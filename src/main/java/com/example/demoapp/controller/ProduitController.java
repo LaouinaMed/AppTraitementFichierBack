@@ -27,8 +27,9 @@ public class ProduitController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('client_admin')")
-    public ResponseEntity<Produit> updateProduit( @PathVariable Long id, @Nullable @RequestBody Produit produit) {
-        return ResponseEntity.ok(produitService.updateProduit(id, produit));
+    public ResponseEntity<Produit> updateProduit( @PathVariable Long id, @RequestBody Produit produit) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(produitService.updateProduit(id, produit));
+
     }
 
     @DeleteMapping("/{id}")
@@ -42,6 +43,7 @@ public class ProduitController {
     @PreAuthorize("hasRole('client_admin') or hasRole('client_user') or hasRole('client_user_edit_statut')")
 
     public ResponseEntity<List<Produit>> getAllPersonnes() {
-        return ResponseEntity.ok((List<Produit>) produitService.getAllProduits());
+        return ResponseEntity.status(HttpStatus.CREATED).body(produitService.getAllProduits());
+
     }
 }

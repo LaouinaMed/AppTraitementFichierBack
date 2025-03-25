@@ -27,15 +27,13 @@ import java.util.logging.Logger;
 public class PersonneController {
 
     private final PersonneService personneService;
-
     private final KeycloakServiceImpl keycloakService;
 
 
     @PostMapping("/upload")
     @PreAuthorize("hasRole('client_admin')")
     public ResponseEntity<Boolean> uploadFile(@RequestParam("file") MultipartFile file) throws IOException {
-        boolean isUploaded = personneService.saveFile(file);
-        return ResponseEntity.status(isUploaded ? HttpStatus.CREATED : HttpStatus.BAD_REQUEST).body(isUploaded);
+        return ResponseEntity.status(HttpStatus.CREATED).body(personneService.saveFile(file));
     }
 
 
@@ -47,8 +45,8 @@ public class PersonneController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('client_admin')")
-    public ResponseEntity<Personne> updatePersonne(@PathVariable Long id, @Nullable @RequestBody Personne personne) {
-        return ResponseEntity.ok(personneService.updatePersonne(id, personne));
+    public ResponseEntity<Personne> updatePersonne(@PathVariable Long id, @RequestBody Personne personne) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(personneService.updatePersonne(id, personne));
     }
 
     @DeleteMapping("/{id}")
@@ -60,17 +58,8 @@ public class PersonneController {
 
     @GetMapping
     @PreAuthorize("hasRole('client_admin')")
-
     public ResponseEntity<List<Personne>> getAllPersonnes() {
         return ResponseEntity.ok((List<Personne>) personneService.getAllPersonnes());
-    }
-
-    @GetMapping("/{id}")
-    @PreAuthorize("hasRole('client_admin')")
-    public ResponseEntity<Personne> getPersonneById(@PathVariable Long id) {
-        return personneService.getPersonneById(id)
-                .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping("/roles/{id}")
@@ -78,32 +67,20 @@ public class PersonneController {
     public ResponseEntity<List<String>> getUserRoles(@PathVariable String id) {
 
             List<String> roles = keycloakService.getUserRoles(id);
-            return ResponseEntity.ok(roles);
+            return ResponseEntity.status(HttpStatus.OK).body(roles);
 
     }
 
     @PutMapping("/roles/{id}")
     @PreAuthorize("hasRole('client_admin')")
     public ResponseEntity<Map<String, String>> assignRoleToUser(@PathVariable String id, @RequestParam String roleName) {
-        try {
-            keycloakService.assignRoleToUser(id, roleName);
+        keycloakService.assignRoleToUser(id, roleName);
 
-            // Créez une Map pour structurer la réponse JSON
-            Map<String, String> response = new HashMap<>();
-            response.put("status", "success");
-            response.put("message", "Rôle " + roleName + " attribué à l'utilisateur " + id);
+        Map<String, String> response = new HashMap<>();
+        response.put("status", "success");
+        response.put("message", "Rôle " + roleName + " attribué à l'utilisateur " + id);
 
-            // Retourne la réponse avec un statut HTTP 200 OK
-            return ResponseEntity.status(HttpStatus.OK).body(response);
-        } catch (RuntimeException e) {
-            // Créez une Map pour l'erreur
-            Map<String, String> response = new HashMap<>();
-            response.put("status", "error");
-            response.put("message", "Erreur lors de l'attribution du rôle : " + e.getMessage());
-
-            // Retourne une réponse avec un statut HTTP 400 BAD REQUEST
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-        }
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
 
@@ -111,38 +88,34 @@ public class PersonneController {
     @GetMapping("/client-roles")
     @PreAuthorize("hasRole('client_admin')")
     public ResponseEntity<List<String>> getAllClientRoles() {
-        try {
+
             List<String> roles = keycloakService.getAllClientRoles();
-            return ResponseEntity.ok(roles);
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonList("Erreur : " + e.getMessage()));
-        }
+            return ResponseEntity.status(HttpStatus.OK).body(roles);
+
     }
 
 
     @DeleteMapping("/roles/{userId}")
     @PreAuthorize("hasRole('client_admin')")
     public ResponseEntity<Map<String, String>> removeRoleFromUser(@PathVariable String userId, @RequestParam String roleName) {
-        try {
-            // Suppression du rôle
+
             keycloakService.removeRoleFromUser(userId, roleName);
 
-            // Créer un objet Map pour la réponse JSON
             Map<String, String> response = new HashMap<>();
             response.put("status", "success");
             response.put("message", "Rôle supprimé avec succès");
 
-            // Retourner la réponse avec un statut HTTP 200 OK
-            return ResponseEntity.ok(response);  // Spring convertit automatiquement en JSON
-        } catch (Exception e) {
-            // Créer un objet Map pour la réponse d'erreur en JSON
-            Map<String, String> response = new HashMap<>();
-            response.put("status", "error");
-            response.put("message", "Erreur lors de la suppression du rôle : " + e.getMessage());
+        return ResponseEntity.status(HttpStatus.OK).body(response);
 
-            // Retourner la réponse avec un statut HTTP 400 (BAD_REQUEST)
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-        }
+    }
+
+
+    @GetMapping("/{id}")
+    @PreAuthorize("hasRole('client_admin')")
+    public ResponseEntity<Personne> getPersonneById(@PathVariable Long id) {
+        return personneService.getPersonneById(id)
+                .map(personne -> ResponseEntity.ok(personne))
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
 

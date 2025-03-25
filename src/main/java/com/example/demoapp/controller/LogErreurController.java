@@ -25,6 +25,6 @@ public class LogErreurController {
     public ResponseEntity<List<LogErreur>> getAllLogs() {
 
         List<LogErreur> logs = (List<LogErreur>) logErreurService.getAllLogs();
-        return new ResponseEntity<>(logs, HttpStatus.OK);
+        return ResponseEntity.status(HttpStatus.OK).body(logs);
     }
 }

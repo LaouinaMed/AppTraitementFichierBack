@@ -10,6 +10,7 @@ import com.example.demoapp.repositories.CommandeRepository;
 import com.example.demoapp.repositories.LogErreurRepository;
 import com.example.demoapp.repositories.PersonneRepository;
 import com.example.demoapp.repositories.ProduitRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.ItemProcessor;
@@ -18,25 +19,21 @@ import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
-
+@Slf4j
 public class CommandeProcessor implements ItemProcessor<DtoCommande, Commande> {
 
-    private static final Logger logger = Logger.getLogger(CommandeProcessor.class.getName());
     private CommandeRepository commandeRepository;
     private  PersonneRepository personneRepository;
     private ProduitRepository produitRepository;
 
     private LogErreurRepository logErreurRepository;
-    private Set<String> processedCins = new HashSet<>();
-    private Set<String> processedTels = new HashSet<>();
-    private List<String> erreurs = new ArrayList<>();
+
     private int ligneActuelle = 1;
     private String fileName ="Fichier inconnu";
     private String date;
 
 
 
-    //@Autowired
     public CommandeProcessor(CommandeRepository commandeRepository, LogErreurRepository logErreurRepository, PersonneRepository personneRepository, ProduitRepository produitRepository){
         this.commandeRepository = commandeRepository;
         this.logErreurRepository = logErreurRepository;
@@ -51,24 +48,6 @@ public class CommandeProcessor implements ItemProcessor<DtoCommande, Commande> {
     }
 
 
-    private boolean isAdressValid(String adress) {
-        return adress != null && Pattern.matches("^[A-Za-z0-9,.'\\-\\s]{5,}$", adress);
-    }
-
-
-    public void afficherErreurs() {
-        if (!erreurs.isEmpty()) {
-            logger.info("*********************************** Erreurs détectées pendant l'importation : ****************************************");
-            for (String erreur : erreurs) {
-                logger.info(erreur);
-            }
-
-        } else {
-            logger.info("*********************************** Aucune erreur détectée.****************************************");
-        }
-    }
-
-
     @Override
     public Commande process(DtoCommande dtoCommande) throws Exception {
         ligneActuelle++;
@@ -77,7 +56,7 @@ public class CommandeProcessor implements ItemProcessor<DtoCommande, Commande> {
         String fichier = "] - Fichier: ";
         String ligne = " | Ligne ";
 
-        StatutCommande statut = dtoCommande.getStatut();
+        //StatutCommande statut = dtoCommande.getStatut();
 
         if (dtoCommande.getNom() == null || dtoCommande.getNom().isEmpty()
                 || dtoCommande.getTel() == null || dtoCommande.getTel().isEmpty()
@@ -98,19 +77,32 @@ public class CommandeProcessor implements ItemProcessor<DtoCommande, Commande> {
             isValid = false;
         }
 
+        if(personneOptional.isPresent() && !personneOptional.get().getNom().equalsIgnoreCase(dtoCommande.getNom()) ){
+            String message = erreurMsg + date + fichier + fileName + ligne + ligneActuelle + " : Le nom fourni ne correspond pas à celui enregistré pour ce numéro de téléphone " + dtoCommande.getNom();
+            logErreurRepository.save(new LogErreur(null, fileName, ligneActuelle, message, date));
+            isValid = false;
+        }
+
         if (!produitOptional.isPresent()) {
             String message = erreurMsg + date + fichier + fileName + ligne + ligneActuelle + " : Produit non trouvé avec le libeller : " + dtoCommande.getLibeller();
             logErreurRepository.save(new LogErreur(null, fileName, ligneActuelle, message, date));
             isValid = false;
         }
+        if (dtoCommande.getQuantite() > 0) {
+            String message = erreurMsg + date + fichier + fileName + ligne + ligneActuelle + " : La quantité demandée est negative";
+            logErreurRepository.save(new LogErreur(null, fileName, ligneActuelle, message, date));
+            isValid = false;
+        }
 
-        if (dtoCommande.getQuantite() == null || dtoCommande.getQuantite() > produitOptional.get().getQuantite()) {
+        if (produitOptional.isPresent() && dtoCommande.getQuantite() > produitOptional.get().getQuantite()) {
             String message = erreurMsg + date + fichier + fileName + ligne + ligneActuelle + " : La quantité demandée dépasse le stock disponible";
             logErreurRepository.save(new LogErreur(null, fileName, ligneActuelle, message, date));
             isValid = false;
         }
 
-        if (statut == null && (statut.name().equals("CONFIRMEE") || statut.name().equals("REJETEE"))) {
+        //if ( !(statut.name().equals("CONFIRMEE") || statut.name().equals("REJETEE"))) {
+
+        if ( !(dtoCommande.getStatut().equals("CONFIRMEE") || dtoCommande.getStatut().equals("REJETEE"))) {
             String message = erreurMsg + date + fichier + fileName + ligne + ligneActuelle + " : Verifier le statut";
             logErreurRepository.save(new LogErreur(null, fileName, ligneActuelle, message, date));
             isValid = false;
@@ -120,10 +112,13 @@ public class CommandeProcessor implements ItemProcessor<DtoCommande, Commande> {
             Commande commande = new Commande();
             Long montant = produitOptional.get().getPrix() * dtoCommande.getQuantite();
             commande.setQuantite(dtoCommande.getQuantite());
+            produitOptional.get().setQuantite(produitOptional.get().getQuantite() - dtoCommande.getQuantite());
             commande.setProduit(produitOptional.get());
             commande.setMontant(montant);
             commande.setPersonne(personneOptional.get());
-            commande.setStatut(statut);
+            StatutCommande statutEnum = StatutCommande.valueOf(dtoCommande.getStatut().toUpperCase());
+
+            commande.setStatut(statutEnum);
             return commande;
         } else {
             return null;

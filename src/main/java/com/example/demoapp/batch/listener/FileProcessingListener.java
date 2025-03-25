@@ -1,5 +1,6 @@
 package com.example.demoapp.batch.listener;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.StepExecutionListener;
 import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.StepExecution;
@@ -13,6 +14,7 @@ import java.text.MessageFormat;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+@Slf4j
 public class FileProcessingListener implements StepExecutionListener {
 
     private final String sourceDir;
@@ -24,12 +26,10 @@ public class FileProcessingListener implements StepExecutionListener {
 
     public FileProcessingListener(String sourceDir, String validDirectory, String errorDirectory) {
         this.sourceDir = sourceDir;
-
         this.validDirectory = validDirectory;
         this.errorDirectory = errorDirectory;
 
     }
-
 
     @Override
     public void beforeStep(StepExecution stepExecution) {
@@ -50,16 +50,13 @@ public class FileProcessingListener implements StepExecutionListener {
         }
     }
 
-
-
-
     @Override
     public ExitStatus afterStep(StepExecution stepExecution) {
         try {
 
             File sourceFolder = new File(sourceDir);
 
-            File[] files = sourceFolder.listFiles((dir, name) -> name.endsWith(".txt")); // Filtrer pour ne prendre que les .txt
+            File[] files = sourceFolder.listFiles((dir, name) -> name.endsWith(".txt"));
             File[] filesNotTxt = sourceFolder.listFiles((dir, name) -> !name.endsWith(".txt"));
             if (files != null) {
                 for (File file : files) {
@@ -95,9 +92,8 @@ public class FileProcessingListener implements StepExecutionListener {
             File destinationDirectory = new File(destinationDir);
 
             if (!destinationDirectory.exists()) {
-                destinationDirectory.mkdirs(); // Créer les répertoires si nécessaires
+                destinationDirectory.mkdirs();
             }
-
 
             Files.move(sourcePath, destinationPath);
             if (logger.isLoggable(Level.INFO)) {

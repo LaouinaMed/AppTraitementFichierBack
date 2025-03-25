@@ -9,6 +9,8 @@ import com.example.demoapp.enumeration.StatutCommande;
 import com.example.demoapp.repositories.CommandeRepository;
 import com.example.demoapp.repositories.PersonneRepository;
 import com.example.demoapp.repositories.ProduitRepository;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -20,7 +22,7 @@ public class CommandeServiceImpl implements CommandeService {
     private final CommandeRepository commandeRepository;
     private final ProduitRepository produitRepository;
     private final PersonneRepository personneRepository;
-    private final KeycloakService keycloakService;  // Injecter le service Keycloak
+    private final KeycloakService keycloakService;
 
 
     public CommandeServiceImpl(CommandeRepository commandeRepository, ProduitRepository produitRepository, PersonneRepository personneRepository, KeycloakService keycloakService) {
@@ -47,35 +49,38 @@ public class CommandeServiceImpl implements CommandeService {
     }
 
     @Override
-    public Commande ajouterCommande(String tel, String nom, String libellerProduit, Long quantite, String statut) {
+    public Commande ajouterCommande(Commande commande) {
         try {
 
-            Personne personne = personneRepository.findByTel(tel)
-                    .orElseThrow(() -> new IllegalArgumentException("Personne non trouvée avec le numéro de téléphone : " + tel));
+            Personne personne = personneRepository.findByTel(commande.getPersonne().getTel())
+                    .orElseThrow(() -> new IllegalArgumentException("Personne non trouvée avec le numéro de téléphone : " + commande.getPersonne().getTel()));
 
-            if (!personne.getNom().equalsIgnoreCase(nom)) {
+            if (!personne.getNom().equalsIgnoreCase(commande.getPersonne().getNom())) {
                 throw new IllegalArgumentException("Le nom fourni ne correspond pas à celui enregistré pour ce numéro de téléphone.");
             }
 
-            Produit produit = produitRepository.findByLibeller(libellerProduit)
-                    .orElseThrow(() -> new NoSuchElementException("Produit non trouvé avec le libeller : " + libellerProduit));
+            Produit produit = produitRepository.findByLibeller(commande.getProduit().getLibeller())
+                    .orElseThrow(() -> new NoSuchElementException("Produit non trouvé avec le libeller : " + commande.getProduit().getLibeller()));
 
-            if (quantite > produit.getQuantite()) {
+            if (commande.getQuantite() > produit.getQuantite()) {
                 throw new IllegalArgumentException("La quantité demandée dépasse le stock disponible");
             }
 
-            Long montant = produit.getPrix() * quantite;
+            Long montant = produit.getPrix() * commande.getQuantite();
+            produit.setQuantite(produit.getQuantite() - commande.getQuantite());
 
-            StatutCommande statutCommande = StatutCommande.valueOf(statut.toUpperCase());
 
-            Commande commande = new Commande();
-            commande.setProduit(produit);
-            commande.setStatut(statutCommande);
-            commande.setQuantite(quantite);
-            commande.setMontant(montant);
-            commande.setPersonne(personne);
+            StatutCommande statutCommande = StatutCommande.valueOf(commande.getStatut().name());
 
-            return commandeRepository.save(commande);
+            Commande nouvellecCmmande = new Commande();
+            nouvellecCmmande.setProduit(produit);
+            nouvellecCmmande.setStatut(statutCommande);
+            nouvellecCmmande.setQuantite(commande.getQuantite());
+            nouvellecCmmande.setMontant(montant);
+            nouvellecCmmande.setPersonne(personne);
+
+
+            return commandeRepository.save(nouvellecCmmande);
 
         } catch (IllegalArgumentException | NoSuchElementException e) {
             throw new RuntimeException("Erreur lors de l'ajout de la commande : " + e.getMessage());
@@ -83,48 +88,49 @@ public class CommandeServiceImpl implements CommandeService {
     }
 
 
-
     @Override
-
-    public Commande modifierCommande(Long commandeId, String tel, String nom, String libellerProduit, Long quantite, String statut,String keycloakUserId) {
+    public Commande modifierCommande(Long commandeId, Commande commande) {
         try {
-            List<String> userRoles = keycloakService.getUserRoles(keycloakUserId);
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String keycloakUserId = authentication.getName();
 
+            List<String> userRoles = keycloakService.getUserRoles(commande.getPersonne().getKeycloakId());
 
-                Commande commande = commandeRepository.findById(commandeId)
+                Commande existingCommande  = commandeRepository.findById(commandeId)
                         .orElseThrow(() -> new IllegalArgumentException("Commande non trouvée avec l'ID : " + commandeId));
 
-                Personne personne = personneRepository.findByTel(tel)
-                        .orElseThrow(() -> new IllegalArgumentException("Personne non trouvée avec le numéro de téléphone : " + tel));
 
-                if (!personne.getNom().equalsIgnoreCase(nom)) {
+                Personne personne = personneRepository.findByTel(commande.getPersonne().getTel())
+                        .orElseThrow(() -> new IllegalArgumentException("Personne non trouvée avec le numéro de téléphone : " + commande.getPersonne().getTel()));
+
+                if (!personne.getNom().equalsIgnoreCase(commande.getPersonne().getNom())) {
                     throw new IllegalArgumentException("Le nom fourni ne correspond pas à celui enregistré pour ce numéro de téléphone.");
                 }
 
-                Produit produit = produitRepository.findByLibeller(libellerProduit)
-                        .orElseThrow(() -> new NoSuchElementException("Produit non trouvé avec le libeller : " + libellerProduit));
+                Produit produit = produitRepository.findByLibeller(commande.getProduit().getLibeller())
+                        .orElseThrow(() -> new NoSuchElementException("Produit non trouvé avec le libeller : " + commande.getProduit().getLibeller()));
 
-                if (quantite > produit.getQuantite()) {
+                if (commande.getQuantite() > produit.getQuantite()) {
                     throw new IllegalArgumentException("La quantité demandée dépasse le stock disponible");
                 }
             if (userRoles.contains("client_admin")) {
-                Long montant = produit.getPrix() * quantite;
+                Long montant = produit.getPrix() * commande.getQuantite();
+                produit.setQuantite(produit.getQuantite() - commande.getQuantite());
 
-                StatutCommande statutCommande = StatutCommande.valueOf(statut.toUpperCase());
 
-                commande.setProduit(produit);
-                commande.setStatut(statutCommande);
-                commande.setQuantite(quantite);
-                commande.setMontant(montant);
-                commande.setPersonne(personne);
+                StatutCommande statutCommande = StatutCommande.valueOf(commande.getStatut().name());
+
+                existingCommande.setProduit(produit);
+                existingCommande.setStatut(statutCommande);
+                existingCommande.setQuantite(commande.getQuantite());
+                existingCommande.setMontant(montant);
+                existingCommande.setPersonne(personne);
+
             }else{
-                StatutCommande statutCommande = StatutCommande.valueOf(statut.toUpperCase());
-                commande.setStatut(statutCommande);
-
+                StatutCommande statutCommande = StatutCommande.valueOf(commande.getStatut().name());
+                existingCommande.setStatut(statutCommande);
             }
-
-
-            return commandeRepository.save(commande);
+            return commandeRepository.save(existingCommande);
 
         } catch (IllegalArgumentException | NoSuchElementException e) {
             throw new RuntimeException("Erreur lors de la modification de la commande : " + e.getMessage());
@@ -132,7 +138,6 @@ public class CommandeServiceImpl implements CommandeService {
     }
 
     @Override
-
     public void supprimerCommande(Long commandeId) {
         try {
             Commande commande = commandeRepository.findById(commandeId)
