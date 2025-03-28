@@ -11,6 +11,7 @@ import com.example.demoapp.repositories.LogErreurRepository;
 import com.example.demoapp.repositories.PersonneRepository;
 import com.example.demoapp.repositories.ProduitRepository;
 import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.*;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
@@ -45,6 +46,7 @@ import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 @Component
+@Slf4j
 public class DirectoryWatcher {
 
     private final JobLauncher jobLauncher;
@@ -59,7 +61,7 @@ public class DirectoryWatcher {
 
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
-    private static final Logger logger = Logger.getLogger(DirectoryWatcher.class.getName());
+    //private static final Logger logger = Logger.getLogger(DirectoryWatcher.class.getName());
 
 
     public DirectoryWatcher(JobLauncher jobLauncher, JobRepository jobRepository, PlatformTransactionManager platformTransactionManager, PersonneRepository repository, CommandeRepository commandeRepository, ProduitRepository produitRepository, LogErreurRepository logErreurRepository) {
@@ -80,9 +82,9 @@ public class DirectoryWatcher {
                 Path directoryPath = Paths.get("C:/Users/simed/Desktop/ReaderBatch");
                 watchDirectory(directoryPath);
             } catch (InterruptedException e) {
-                logger.severe("Le thread de surveillance a été interrompu : " + e.getMessage());
+                log.info("Le thread de surveillance a été interrompu : " + e.getMessage());
             } catch (Exception e) {
-                logger.severe("Une erreur est survenue : " + e.getMessage());
+                log.info("Une erreur est survenue : " + e.getMessage());
             }
         });
     }
@@ -96,32 +98,31 @@ public class DirectoryWatcher {
             try (Stream<Path> stream = Files.list(dirPath)) {
                 stream.filter(file -> Files.isRegularFile(file))
                         .forEach(file -> {
-                            logger.info("Fichier est déjà présent : " + file.getFileName());
-                            logger.info("Job lancé après présence du fichier");
+                            log.info("Fichier est déjà présent : " + file.getFileName());
+                            log.info("Job lancé après présence du fichier");
 
                             launchJobForFile(file.getFileName().toString());
                         });
             } catch (IOException e) {
-                logger.severe("Erreur lors de la lecture du dossier : " + e.getMessage());
+                log.info("Erreur lors de la lecture du dossier : " + e.getMessage());
             }
 
-            logger.info("***** Start watching directory *****");
+            log.info("***** Start watching directory *****");
 
             while (true) {
                 WatchKey key = watchService.take();
                 for (WatchEvent<?> event : key.pollEvents()) {
                     if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
 
-                        logger.info("Job lancé après la détection de fichier");
+                        log.info("Job lancé après la détection de fichier");
 
                         try {
                             launchJobForFile(event.context().toString());
                         } catch (Exception e) {
-                            logger.severe("Une erreur est survenue : " + e.getMessage());
+                            log.info("Une erreur est survenue : " + e.getMessage());
                         }
                     }
                 }
-
                 boolean valid = key.reset();
                 if (!valid) {
                     break;
@@ -132,7 +133,7 @@ public class DirectoryWatcher {
     }
 
     private Job createJob() throws IOException, TransactionException {
-        logger.info("**************Job - Start");
+        log.info("**************Job - Start");
 
         return new JobBuilder("importPersonnes", jobRepository)
                 .start(importStep())
@@ -140,7 +141,7 @@ public class DirectoryWatcher {
     }
 
     private Step importStep() throws IOException {
-        logger.info("**************import Step - Start");
+        log.info("**************import Step - Start");
 
         return new StepBuilder("txtImport", jobRepository)
                 .<DtoCommande, Commande>chunk(2, platformTransactionManager)
@@ -156,7 +157,7 @@ public class DirectoryWatcher {
 
     public MultiResourceItemReader<DtoCommande> multiResourceItemReader() throws IOException {
         MultiResourceItemReader<DtoCommande> multiResourceItemReader = new MultiResourceItemReader<>();
-        logger.info("**************Reader");
+        log.info("**************Reader");
 
         Resource[] resources = new PathMatchingResourcePatternResolver()
                 .getResources("file:C:/Users/simed/Desktop/ReaderBatch/*.txt");
@@ -169,7 +170,7 @@ public class DirectoryWatcher {
 
     public FlatFileItemReader<DtoCommande> itemReader(){
         FlatFileItemReader<DtoCommande> itemReader = new FlatFileItemReader<>();
-        logger.info("**************Reading ItemReader");
+        log.info("**************Reading ItemReader");
 
         itemReader.setName("txtReader");
         itemReader.setLinesToSkip(1);
@@ -204,13 +205,13 @@ public class DirectoryWatcher {
     }
 */
     public CommandeProcessor processor(){
-        logger.info("**************Processing: " );
+        log.info("**************Processing: " );
         return new CommandeProcessor(commandeRepository,logErreurRepository,personneRepository,produitRepository);
     }
 
     public RepositoryItemWriter<Commande> writer(){
         RepositoryItemWriter<Commande> writer = new RepositoryItemWriter<>();
-        logger.info("**************Writer");
+        log.info("**************Writer");
 
         writer.setRepository(commandeRepository);
         writer.setMethodName("save");
@@ -231,13 +232,11 @@ public class DirectoryWatcher {
                 .addString("formattedDate", formattedDate)
                 .toJobParameters();
         try {
-            if (logger.isLoggable(Level.INFO)) {
-                logger.info(MessageFormat.format(" Le fichier a été déplacé sous un nouveau nom : {0}" , fileName));
-            }
+            log.info(MessageFormat.format(" Le fichier a été déplacé sous un nouveau nom : {0}" , fileName));
             Job job = createJob();
             jobLauncher.run(job, jobParameters);
         } catch (Exception e) {
-            logger.severe("erreur est survenue : " + e.getMessage());
+            log.info("erreur est survenue : " + e.getMessage());
 
         }
     }

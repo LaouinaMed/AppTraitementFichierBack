@@ -200,6 +200,9 @@ public class KeycloakServiceImpl implements KeycloakService {
 
             List<String> roleNames = new ArrayList<>();
             for (RoleRepresentation role : clientRoles) {
+                if(role.getName().equals("client_admin") ){
+                    continue;
+                }
                 roleNames.add(role.getName());
             }
 

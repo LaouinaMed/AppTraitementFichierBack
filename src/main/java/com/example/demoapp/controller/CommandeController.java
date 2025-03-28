@@ -8,7 +8,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -50,11 +52,8 @@ public class CommandeController {
     @PreAuthorize("hasRole('client_admin') or hasRole('client_user') or hasRole('client_user_edit_statut')")
     public ResponseEntity<List<Commande>> getAllCommandes() {
 
-            // Récupérer l'ID de l'utilisateur connecté depuis le contexte de sécurité
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            String keycloakUserId = authentication.getName();  // Cela suppose que le nom d'utilisateur dans Keycloak est l'ID de l'utilisateur
-
-
+            String keycloakUserId = authentication.getName();
             List<Commande> commandes = commandeService.getAllCommandes(keycloakUserId);
 
             return ResponseEntity.status(HttpStatus.OK).body(commandes);
@@ -66,5 +65,11 @@ public class CommandeController {
     public ResponseEntity<List<String>> getStatutsDisponibles() {
         List<String> statuts = commandeService.getStatutsDisponibles();
         return ResponseEntity.status(HttpStatus.OK).body(statuts);
+    }
+
+    @PostMapping("/upload")
+    @PreAuthorize("hasRole('client_admin')")
+    public ResponseEntity<Boolean> uploadFile(@RequestParam("file") MultipartFile file) throws IOException {
+        return ResponseEntity.status(HttpStatus.CREATED).body(commandeService.saveFile(file));
     }
 }

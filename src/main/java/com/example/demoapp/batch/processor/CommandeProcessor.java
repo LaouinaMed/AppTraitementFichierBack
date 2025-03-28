@@ -88,7 +88,7 @@ public class CommandeProcessor implements ItemProcessor<DtoCommande, Commande> {
             logErreurRepository.save(new LogErreur(null, fileName, ligneActuelle, message, date));
             isValid = false;
         }
-        if (dtoCommande.getQuantite() > 0) {
+        if (!(dtoCommande.getQuantite() > 0)) {
             String message = erreurMsg + date + fichier + fileName + ligne + ligneActuelle + " : La quantité demandée est negative";
             logErreurRepository.save(new LogErreur(null, fileName, ligneActuelle, message, date));
             isValid = false;

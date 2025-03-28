@@ -1,7 +1,9 @@
 package com.example.demoapp.services;
 
 import com.example.demoapp.Iservices.ProduitService;
+import com.example.demoapp.entities.Commande;
 import com.example.demoapp.entities.Produit;
+import com.example.demoapp.repositories.CommandeRepository;
 import com.example.demoapp.repositories.ProduitRepository;
 import org.springframework.stereotype.Service;
 
@@ -11,8 +13,10 @@ import java.util.Optional;
 @Service
 public class ProduitServiceImpl implements ProduitService {
     private final ProduitRepository produitRepository;
-    public ProduitServiceImpl(ProduitRepository produitRepository) {
+    private final CommandeRepository commandeRepository;
+    public ProduitServiceImpl(ProduitRepository produitRepository, CommandeRepository commandeRepository) {
         this.produitRepository = produitRepository;
+        this.commandeRepository = commandeRepository;
     }
 
     @Override
@@ -31,7 +35,7 @@ public class ProduitServiceImpl implements ProduitService {
                return produitRepository.save(produit);
            }
        }catch (Exception e){
-           throw new RuntimeException("Erreur lors de l'ajout de la personne : " + e.getMessage(), e);
+           throw new RuntimeException("Erreur lors de l'ajout du produit : " + e.getMessage(), e);
        }
     }
 
@@ -46,24 +50,35 @@ public class ProduitServiceImpl implements ProduitService {
 
         Produit produit = produitOptional.get();
 
+        List<Commande> commandes = commandeRepository.findByProduit(produit);
+
+
+
         if (produitRepository.findByLibeller(produitDetails.getLibeller())
                 .filter(existingProduit -> !existingProduit.getId().equals(produit.getId()))
                 .isPresent()) {
             throw new IllegalArgumentException("Un produit avec ce libellé existe déjà");
         }
 
-        if (produitDetails.getQuantite() <= 0) {
+        if (produitDetails.getQuantite() < 0) {
             throw new IllegalArgumentException("La quantité doit être supérieure à 0");
         }
 
-        if(produit.getPrix() <= 0){
+        if(produitDetails.getPrix() <= 0){
             throw new IllegalArgumentException("Prix doit etre superieure de 0");
-
         }
 
         produit.setLibeller(produitDetails.getLibeller());
         produit.setQuantite(produitDetails.getQuantite());
         produit.setPrix(produitDetails.getPrix());
+
+        if(!(commandes.isEmpty() || commandes == null)){
+            for(Commande commande : commandes){
+                long montant = produit.getPrix() * commande.getQuantite();
+                commande.setMontant(montant);
+                commandeRepository.save(commande);
+            }
+        }
 
         return produitRepository.save(produit);
 

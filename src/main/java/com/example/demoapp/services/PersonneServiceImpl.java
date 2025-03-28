@@ -1,20 +1,17 @@
 package com.example.demoapp.services;
 
 import com.example.demoapp.Iservices.PersonneService;
+import com.example.demoapp.entities.Commande;
 import com.example.demoapp.entities.Personne;
+import com.example.demoapp.entities.Produit;
 import com.example.demoapp.repositories.CommandeRepository;
 import com.example.demoapp.repositories.PersonneRepository;
+import com.example.demoapp.repositories.ProduitRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -23,13 +20,16 @@ import java.util.logging.Logger;
 public class PersonneServiceImpl implements PersonneService {
 
     private final PersonneRepository personneRepository;
+    private final ProduitRepository produitRepository;
+
     private KeycloakServiceImpl keycloakService;
     private CommandeRepository commandeRepository;
     private static final Logger log = Logger.getLogger(PersonneServiceImpl.class.getName());
 
     @Autowired
-    public PersonneServiceImpl(PersonneRepository personneRepository, KeycloakServiceImpl keycloakService,CommandeRepository commandeRepository) {
+    public PersonneServiceImpl(PersonneRepository personneRepository, ProduitRepository produitRepository, KeycloakServiceImpl keycloakService, CommandeRepository commandeRepository) {
         this.personneRepository = personneRepository;
+        this.produitRepository = produitRepository;
         this.keycloakService = keycloakService;
         this.commandeRepository = commandeRepository;
     }
@@ -47,30 +47,6 @@ public class PersonneServiceImpl implements PersonneService {
     }
 
     private static final String STORAGE_DIRECTORY = "C:\\Users\\simed\\Desktop\\ReaderBatch";
-
-
-
-    @Override
-    public boolean saveFile(MultipartFile fileToSave) {
-        try {
-            if (fileToSave == null) {
-                throw new IllegalArgumentException("Fichier à sauvegarder est null");
-            }
-
-            File targetFile = new File(STORAGE_DIRECTORY + '\\' + fileToSave.getOriginalFilename());
-
-            if (!Objects.equals(targetFile.getParent(), STORAGE_DIRECTORY)) {
-                throw new SecurityException("Nom de fichier non pris en charge");
-            }
-
-            Files.copy(fileToSave.getInputStream(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            return true;
-
-        } catch (IOException | IllegalArgumentException | SecurityException e) {
-            log.log(Level.SEVERE, "Erreur lors de l'upload du fichier", e);
-            return false;
-        }
-    }
 
 
     @Override
@@ -169,7 +145,19 @@ public class PersonneServiceImpl implements PersonneService {
             Personne personne = personneRepository.findById(id)
                     .orElseThrow(() -> new IllegalArgumentException("Personne non trouvée"));
 
-            commandeRepository.deleteByPersonne(personne);
+            List<Commande> commandes = commandeRepository.findByPersonne(personne);
+
+            if (!(commandes == null || commandes.isEmpty())) {
+                for(Commande commande : commandes){
+                    Produit produit = commande.getProduit();
+
+                    produit.setQuantite(produit.getQuantite()+ commande.getQuantite());
+
+                    produitRepository.save(produit);
+                    commandeRepository.delete(commande);
+
+                }
+            }
             keycloakService.deleteUserInKeycloak(personne.getKeycloakId());
             personneRepository.delete(personne);
 

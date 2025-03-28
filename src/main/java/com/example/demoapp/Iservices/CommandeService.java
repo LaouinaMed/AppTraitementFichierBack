@@ -1,7 +1,9 @@
 package com.example.demoapp.Iservices;
 
 import com.example.demoapp.entities.Commande;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 
 public interface CommandeService {
@@ -14,5 +16,7 @@ public interface CommandeService {
     public void supprimerCommande(Long commandeId) ;
 
     List<Commande> getAllCommandes(String keycloakUserId);
+
+    boolean saveFile(MultipartFile fileToSave) throws IOException;
     }
 

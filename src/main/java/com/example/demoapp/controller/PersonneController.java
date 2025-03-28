@@ -30,13 +30,6 @@ public class PersonneController {
     private final KeycloakServiceImpl keycloakService;
 
 
-    @PostMapping("/upload")
-    @PreAuthorize("hasRole('client_admin')")
-    public ResponseEntity<Boolean> uploadFile(@RequestParam("file") MultipartFile file) throws IOException {
-        return ResponseEntity.status(HttpStatus.CREATED).body(personneService.saveFile(file));
-    }
-
-
     @PostMapping
     @PreAuthorize("hasRole('client_admin')")
     public ResponseEntity<Personne> addPersonne( @RequestBody Personne personne) {

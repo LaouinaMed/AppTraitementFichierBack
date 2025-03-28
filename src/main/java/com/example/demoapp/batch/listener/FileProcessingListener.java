@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.StepExecutionListener;
 import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.StepExecution;
+import java.nio.file.StandardCopyOption;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -21,7 +22,7 @@ public class FileProcessingListener implements StepExecutionListener {
     private final String validDirectory;
     private final String errorDirectory;
 
-    private static final Logger logger = Logger.getLogger(FileProcessingListener.class.getName());
+    //private static final Logger logger = Logger.getLogger(FileProcessingListener.class.getName());
 
 
     public FileProcessingListener(String sourceDir, String validDirectory, String errorDirectory) {
@@ -30,7 +31,7 @@ public class FileProcessingListener implements StepExecutionListener {
         this.errorDirectory = errorDirectory;
 
     }
-
+/*
     @Override
     public void beforeStep(StepExecution stepExecution) {
         try {
@@ -40,14 +41,26 @@ public class FileProcessingListener implements StepExecutionListener {
                 for (File file : files) {
                     Path destinationPath = Paths.get(validDirectory, file.getName());
                     if (Files.exists(destinationPath)) {
-                        moveFile(file, errorDirectory);
+                        String newFileName = generateUniqueFileName(file.getName());
+                        //moveFile(file, errorDirectory);
+                        File newFile = new File(sourceDir, newFileName);
+                         file.renameTo(newFile);
+
                     }
                 }
             }
 
         } catch (Exception e) {
-            logger.severe("Une erreur est survenue avant le traitement : " + e.getMessage());
+            log.info("Une erreur est survenue avant le traitement : " + e.getMessage());
         }
+    }
+*/
+
+    private String generateUniqueFileName(String fileName) {
+        String baseName = fileName.substring(0, fileName.lastIndexOf('.'));
+        String extension = fileName.substring(fileName.lastIndexOf('.'));
+        String uniqueName = baseName + "_" + System.currentTimeMillis() + extension;
+        return uniqueName;
     }
 
     @Override
@@ -63,10 +76,19 @@ public class FileProcessingListener implements StepExecutionListener {
 
                     if (stepExecution.getStatus().isUnsuccessful() ) {
                         moveFile(file, errorDirectory);
-                        logger.info("**************afterStep");
+                        log.info("**************afterStep");
 
                     } else {
+
+                        Path destinationPath = Paths.get(validDirectory, file.getName());
+                        if (Files.exists(destinationPath)) {
+                            String newFileName = generateUniqueFileName(file.getName());
+                            //moveFile(file, errorDirectory);
+                            File newFile = new File(sourceDir, newFileName);
+                            file.renameTo(newFile);
+                        }
                         moveFile(file, validDirectory);
+
                     }
                 }
             }
@@ -76,11 +98,11 @@ public class FileProcessingListener implements StepExecutionListener {
                     moveFile(file, errorDirectory);
                 }
             }
-            logger.info("**************afterStep");
+            log.info("**************afterStep");
 
             return ExitStatus.COMPLETED;
         } catch (Exception e) {
-            logger.severe("Une erreur est survenue : " + e.getMessage());
+            log.info("Une erreur est survenue : " + e.getMessage());
             return ExitStatus.FAILED;
         }
     }
@@ -94,14 +116,12 @@ public class FileProcessingListener implements StepExecutionListener {
             if (!destinationDirectory.exists()) {
                 destinationDirectory.mkdirs();
             }
+            Files.move(sourcePath, destinationPath, StandardCopyOption.REPLACE_EXISTING);
+            log.info(MessageFormat.format("✅ Succès: Le fichier a été déplacé avec succès : {0}" , destinationPath));
 
-            Files.move(sourcePath, destinationPath);
-            if (logger.isLoggable(Level.INFO)) {
-                logger.info(MessageFormat.format("✅ Succès: Le fichier a été déplacé avec succès : {0}" , destinationPath));
-            }
 
         } catch (Exception e) {
-            logger.severe("Une erreur est survenue : " + e.getMessage());
+            log.info("Une erreur est survenue : " + e.getMessage());
 
         }
     }
